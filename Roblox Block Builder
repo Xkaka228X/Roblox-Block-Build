@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🧱 Roblox Block Builder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#1a1a2e;--panel:#16213e;--sidebar:#0f3460;
+  --cat-ui:#e94560;--cat-look:#f5a623;--cat-sound:#7ed321;
+  --cat-event:#4a90e2;--cat-control:#9b59b6;--cat-vars:#27ae60;
+  --cat-math:#e67e22;--cat-text:#1abc9c;--cat-roblox:#e74c3c;
+  --cat-player:#3498db;--cat-loop:#8e44ad;--cat-logic:#f39c12;
+  --snap:#00ff88;--text:#fff;--dim:#8892b0;
+  --shadow:0 8px 32px rgba(0,0,0,.5);
+}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;
+  height:100dvh;display:flex;flex-direction:column;overflow:hidden;font-weight:700}
+
+/* ── TOPBAR ── */
+#topbar{
+  height:56px;background:linear-gradient(135deg,#0f3460,#16213e);
+  border-bottom:3px solid #e94560;display:flex;align-items:center;
+  padding:0 12px;gap:10px;flex-shrink:0;z-index:200;
+  box-shadow:0 4px 20px rgba(233,69,96,.3)
+}
+.logo{font-family:'Fredoka One',cursive;font-size:22px;color:#e94560;
+  text-shadow:0 0 20px rgba(233,69,96,.5);white-space:nowrap}
+.logo span{color:#f5a623}
+#topbar-btns{display:flex;gap:8px;margin-left:auto;align-items:center}
+.tbtn{
+  padding:8px 16px;border-radius:20px;border:none;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;
+  transition:.15s;display:flex;align-items:center;gap:6px
+}
+.tbtn-run{background:#27ae60;color:#fff;box-shadow:0 4px 15px rgba(39,174,96,.4)}
+.tbtn-run:hover{background:#2ecc71;transform:scale(1.05)}
+.tbtn-copy{background:#3498db;color:#fff}
+.tbtn-copy:hover{background:#5dade2}
+.tbtn-clear{background:#e74c3c;color:#fff}
+.tbtn-clear:hover{background:#ec7063}
+.tbtn-undo{background:#7f8c8d;color:#fff}
+.block-count{
+  background:rgba(255,255,255,.1);padding:6px 12px;border-radius:12px;
+  font-size:12px;color:#aaa
+}
+
+/* ── LAYOUT ── */
+#main{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:260px;min-width:260px;background:var(--panel);
+  border-right:2px solid rgba(255,255,255,.07);
+  display:flex;flex-direction:column;overflow:hidden;z-index:100
+}
+#cat-tabs{
+  display:grid;grid-template-columns:1fr 1fr;gap:4px;
+  padding:8px;background:rgba(0,0,0,.3);border-bottom:2px solid rgba(255,255,255,.05)
+}
+.cat-btn{
+  padding:6px 4px;border-radius:10px;border:none;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;
+  transition:.15s;color:#fff;opacity:.6;text-align:center
+}
+.cat-btn.active{opacity:1;transform:scale(1.04);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.cat-btn:hover{opacity:.85}
+
+#block-palette{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
+#block-palette::-webkit-scrollbar{width:5px}
+#block-palette::-webkit-scrollbar-thumb{background:#2c3e50;border-radius:3px}
+
+/* Search */
+#search-wrap{padding:8px 8px 0}
+#search-input{
+  width:100%;padding:8px 12px;border-radius:12px;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.1);
+  color:#fff;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700
+}
+#search-input:focus{outline:none;border-color:rgba(255,255,255,.3)}
+#search-input::placeholder{color:#666}
+
+/* ── PALETTE BLOCK ── */
+.pb{
+  border-radius:10px;padding:10px 14px;cursor:grab;
+  font-size:12px;font-weight:800;display:flex;align-items:center;
+  gap:8px;transition:.12s;position:relative;color:#fff;
+  user-select:none;touch-action:none;
+  box-shadow:0 3px 10px rgba(0,0,0,.3)
+}
+.pb:hover{filter:brightness(1.15);transform:translateX(4px) scale(1.02)}
+.pb:active{transform:scale(.95);cursor:grabbing}
+.pb-icon{font-size:16px;flex-shrink:0;width:24px;text-align:center}
+.pb-label{flex:1;line-height:1.2}
+.pb-desc{font-size:10px;opacity:.7;font-weight:600;display:block;margin-top:1px}
+
+/* ── WORKSPACE ── */
+#ws-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#workspace{
+  flex:1;position:relative;overflow:auto;
+  background-image:radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:24px 24px;cursor:default
+}
+#ws-canvas{position:relative;min-width:3000px;min-height:2000px}
+#ws-hint{
+  position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;transition:opacity .4s
+}
+#ws-hint .h-icon{font-size:64px;margin-bottom:12px;opacity:.3}
+#ws-hint .h-text{font-size:16px;color:#5a6a8a;font-weight:800}
+#ws-hint .h-sub{font-size:12px;color:#3a4a6a;margin-top:6px}
+
+/* ── OUTPUT ── */
+#output{
+  height:180px;background:#0a0a14;border-top:3px solid rgba(255,255,255,.07);
+  display:flex;flex-direction:column;flex-shrink:0
+}
+#out-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.07)}
+.out-tab{
+  padding:8px 18px;border:none;background:transparent;
+  color:var(--dim);font-weight:800;font-size:12px;cursor:pointer;
+  border-bottom:3px solid transparent;transition:.15s;font-family:'Nunito',sans-serif
+}
+.out-tab.active{color:#fff;border-bottom-color:#e94560}
+#out-body{flex:1;overflow-y:auto;padding:10px 14px}
+#code-out{font-family:'Courier New',monospace;font-size:11.5px;line-height:1.8;white-space:pre;color:#8892b0}
+.kw{color:#c792ea}.fn{color:#82aaff}.str{color:#c3e88d}.num{color:#f78c6c}
+.cm{color:#4a5568}.op{color:#89ddff}.prop{color:#ffcb6b}
+
+/* ── STACKED BLOCK SYSTEM ── */
+.block-stack{
+  position:absolute;cursor:move;user-select:none;touch-action:none;z-index:10
+}
+.block-stack.dragging-stack{z-index:1000;opacity:.92;filter:drop-shadow(0 12px 30px rgba(0,0,0,.8))}
+.block-stack.snap-preview{filter:drop-shadow(0 0 12px var(--snap))}
+
+/* Individual block in stack */
+.blk{
+  position:relative;min-width:220px;
+  display:flex;flex-direction:column
+}
+
+/* SVG-style puzzle shape via clip-path */
+.blk-body{
+  display:flex;align-items:center;flex-wrap:wrap;
+  padding:9px 14px;gap:6px;min-height:40px;
+  position:relative;cursor:move;
+}
+/* Notch top (male - sticks up) */
+.blk.has-top-notch .blk-body::before{
+  content:'';position:absolute;top:-8px;left:28px;
+  width:32px;height:9px;background:inherit;
+  border-radius:6px 6px 0 0;z-index:1
+}
+/* Slot bottom (female) */
+.blk.has-bottom-slot .blk-body::after{
+  content:'';position:absolute;bottom:-8px;left:28px;
+  width:32px;height:9px;background:inherit;
+  border-radius:0 0 6px 6px;z-index:1
+}
+.blk-text{font-size:13px;font-weight:800;color:#fff;white-space:nowrap;pointer-events:none}
+.blk-input{
+  background:rgba(255,255,255,.18);border:none;border-radius:6px;
+  padding:3px 8px;font-family:'Nunito',sans-serif;font-weight:700;
+  font-size:12px;color:#fff;width:80px;min-width:60px;
+  cursor:text;pointer-events:all
+}
+.blk-input:focus{outline:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.25)}
+.blk-select{
+  background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.2);
+  border-radius:6px;padding:2px 6px;font-family:'Nunito',sans-serif;
+  font-weight:700;font-size:11px;color:#fff;cursor:pointer;pointer-events:all
+}
+.blk-select option{background:#1a1a2e;color:#fff}
+.blk-del{
+  margin-left:auto;width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,.3);border:none;color:rgba(255,255,255,.6);
+  font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.12s;pointer-events:all;flex-shrink:0
+}
+.blk-del:hover{background:#e74c3c;color:#fff}
+
+/* Block connector line */
+.blk+.blk{margin-top:-1px}
+.blk:first-child .blk-body{border-radius:10px 10px 0 0}
+.blk:last-child .blk-body{border-radius:0 0 10px 10px}
+.blk:only-child .blk-body{border-radius:10px}
+.blk:not(:first-child):not(:last-child) .blk-body{border-radius:0}
+
+/* CAP block (hat - event) */
+.blk.cap-block .blk-body{border-radius:20px 20px 0 0!important;padding-top:12px}
+.blk.cap-block .blk-body::before{display:none!important}
+
+/* END block */
+.blk.end-block .blk-body{border-radius:0 0 20px 20px!important}
+.blk.end-block .blk-body::after{display:none!important}
+
+/* C-block (wrap / если) */
+.blk.c-block{min-width:240px}
+.blk.c-block .blk-body{padding-bottom:6px}
+.c-inner{
+  margin-left:30px;border-left:4px solid rgba(255,255,255,.2);
+  min-height:32px;padding:4px 0;border-radius:0 0 0 6px
+}
+
+/* Snap highlight on workspace blocks */
+.blk.snap-target{box-shadow:0 0 0 3px var(--snap),0 0 20px var(--snap)!important}
+
+/* ── MOBILE ── */
+#mob-fab{
+  display:none;position:fixed;bottom:24px;left:24px;
+  width:52px;height:52px;border-radius:50%;background:var(--cat-ui);
+  border:none;color:#fff;font-size:24px;cursor:pointer;z-index:300;
+  box-shadow:0 6px 24px rgba(233,69,96,.6);align-items:center;justify-content:center
+}
+#sidebar-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99
+}
+@media(max-width:680px){
+  #sidebar{
+    position:fixed;top:0;left:0;height:100dvh;z-index:150;
+    transform:translateX(-100%);transition:.3s;width:270px
+  }
+  #sidebar.open{transform:translateX(0)}
+  #sidebar-overlay.show{display:block}
+  #mob-fab{display:flex}
+  #topbar .logo{font-size:16px}
+  .tbtn span{display:none}
+  .tbtn{padding:7px 10px}
+  #output{height:150px}
+}
+@media(max-width:380px){#topbar-btns .tbtn-undo{display:none}}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:#27ae60;color:#fff;padding:10px 24px;border-radius:24px;
+  font-size:14px;font-weight:800;opacity:0;transition:.3s;z-index:9999;
+  pointer-events:none;white-space:nowrap
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── BLOCK COUNT BADGE ── */
+.stack-badge{
+  position:absolute;top:-8px;right:-8px;background:#e94560;
+  color:#fff;border-radius:10px;padding:2px 6px;font-size:10px;
+  font-weight:800;pointer-events:none;z-index:5
+}
+
+/* ── CATEGORY COLORS ── */
+.c-ui{background:linear-gradient(135deg,#e94560,#c0392b)}
+.c-look{background:linear-gradient(135deg,#f5a623,#d68910)}
+.c-sound{background:linear-gradient(135deg,#27ae60,#1e8449)}
+.c-event{background:linear-gradient(135deg,#3498db,#2471a3)}
+.c-control{background:linear-gradient(135deg,#9b59b6,#7d3c98)}
+.c-vars{background:linear-gradient(135deg,#16a085,#0e6655)}
+.c-math{background:linear-gradient(135deg,#e67e22,#ca6f1e)}
+.c-text{background:linear-gradient(135deg,#1abc9c,#17a589)}
+.c-roblox{background:linear-gradient(135deg,#e74c3c,#922b21)}
+.c-player{background:linear-gradient(135deg,#2980b9,#1a5276)}
+.c-loop{background:linear-gradient(135deg,#8e44ad,#6c3483)}
+.c-logic{background:linear-gradient(135deg,#d4ac0d,#b7950b)}
+.c-tween{background:linear-gradient(135deg,#7f8c8d,#616a6b)}
+.c-gui{background:linear-gradient(135deg,#c0392b,#a93226)}
+</style>
+</head>
+<body>
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo">🧱 Roblox <span>Block Builder</span></div>
+  <div id="topbar-btns">
+    <div class="block-count" id="blk-counter">0 блоков</div>
+    <button class="tbtn tbtn-undo" onclick="undo()">↩ <span>Отмена</span></button>
+    <button class="tbtn tbtn-run" onclick="generateAndShow()">▶ <span>Генерить</span></button>
+    <button class="tbtn tbtn-copy" onclick="copyCode()">⎘ <span>Копировать</span></button>
+    <button class="tbtn tbtn-clear" onclick="clearAll()">🗑 <span>Очистить</span></button>
+  </div>
+</div>
+
+<button id="mob-fab" onclick="toggleSidebar()">☰</button>
+<div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div id="main">
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="search-wrap">
+    <input id="search-input" placeholder="🔍 Поиск блоков..." oninput="filterBlocks(this.value)">
+  </div>
+  <div id="cat-tabs"></div>
+  <div id="block-palette"></div>
+</div>
+
+<!-- WORKSPACE -->
+<div id="ws-area">
+  <div id="workspace">
+    <div id="ws-canvas">
+      <div id="ws-hint">
+        <div class="h-icon">🧱</div>
+        <div class="h-text">Перетащи блок сюда!</div>
+        <div class="h-sub">Блоки будут прилипать друг к другу 🔗</div>
+      </div>
+    </div>
+  </div>
+  <!-- OUTPUT -->
+  <div id="output">
+    <div id="out-tabs">
+      <button class="out-tab active" onclick="switchTab('code',this)">📄 Lua Код</button>
+      <button class="out-tab" onclick="switchTab('log',this)">📋 Лог</button>
+      <button class="out-tab" onclick="switchTab('help',this)">❓ Помощь</button>
+    </div>
+    <div id="out-body">
+      <div id="code-out"><span class="cm">-- 👋 Привет! Перетащи блоки сверху и нажми ▶ Генерить</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// BLOCK DEFINITIONS — 100+ блоков
+// ═══════════════════════════════════════════════════════════
+const CATS = [
+  {id:'event', label:'⚡ События',    cls:'c-event'},
+  {id:'ui',    label:'🖼 Интерфейс', cls:'c-ui'},
+  {id:'look',  label:'🎨 Внешний вид',cls:'c-look'},
+  {id:'control',label:'🔀 Управление',cls:'c-control'},
+  {id:'loop',  label:'🔁 Циклы',     cls:'c-loop'},
+  {id:'logic', label:'⚖ Логика',     cls:'c-logic'},
+  {id:'vars',  label:'📦 Переменные',cls:'c-vars'},
+  {id:'math',  label:'➕ Математика', cls:'c-math'},
+  {id:'text',  label:'🔤 Текст',     cls:'c-text'},
+  {id:'player',label:'👤 Игрок',     cls:'c-player'},
+  {id:'roblox',label:'🎮 Roblox',    cls:'c-roblox'},
+  {id:'tween', label:'✨ Анимация',  cls:'c-tween'},
+];
+
+// Поля: {k:ключ, l:метка, v:значение, t:'input'|'select', o:['вариант',...]}
+const DEFS = [
+
+  // ═══ СОБЫТИЯ ═══
+  {cat:'event',id:'ev_start',cap:true, icon:'🚩',label:'Когда скрипт запустился',
+   fields:[], end:false,
+   code:()=>`-- Скрипт запустился!\n`},
+
+  {cat:'event',id:'ev_btn_click',cap:true, icon:'👆',label:'Когда нажата кнопка',
+   fields:[{k:'btn',l:'Кнопка',v:'MyButton'}],
+   code:d=>`${d.btn}.MouseButton1Click:Connect(function()\n`},
+
+  {cat:'event',id:'ev_btn_hover',cap:true, icon:'🖱',label:'Когда навели на',
+   fields:[{k:'elem',l:'Объект',v:'MyButton'}],
+   code:d=>`${d.elem}.MouseEnter:Connect(function()\n`},
+
+  {cat:'event',id:'ev_mouse_leave',cap:true, icon:'👋',label:'Когда убрали мышь с',
+   fields:[{k:'elem',l:'Объект',v:'MyButton'}],
+   code:d=>`${d.elem}.MouseLeave:Connect(function()\n`},
+
+  {cat:'event',id:'ev_key',cap:true, icon:'⌨',label:'Когда нажата клавиша',
+   fields:[{k:'key',l:'Клавиша',v:'E',t:'select',o:['E','F','Q','R','G','H','Space','Return','LeftShift','LeftControl']}],
+   code:d=>`game:GetService("UserInputService").InputBegan:Connect(function(inp,gpe)\n\tif gpe then return end\n\tif inp.KeyCode == Enum.KeyCode.${d.key} then\n`},
+
+  {cat:'event',id:'ev_char_added',cap:true, icon:'🧍',label:'Когда появился персонаж',
+   fields:[],
+   code:()=>`game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)\n`},
+
+  {cat:'event',id:'ev_touched',cap:true, icon:'💥',label:'Когда Part касается',
+   fields:[{k:'part',l:'Part',v:'myPart'}],
+   code:d=>`${d.part}.Touched:Connect(function(hit)\n`},
+
+  {cat:'event',id:'ev_remote',cap:true, icon:'📡',label:'Когда получен RemoteEvent',
+   fields:[{k:'ev',l:'Событие',v:'myEvent'}],
+   code:d=>`game.ReplicatedStorage:WaitForChild("${d.ev}").OnClientEvent:Connect(function(data)\n`},
+
+  {cat:'event',id:'ev_gui_focus',cap:true, icon:'✏',label:'Когда TextBox выбран',
+   fields:[{k:'box',l:'TextBox',v:'MyBox'}],
+   code:d=>`${d.box}.Focused:Connect(function()\n`},
+
+  {cat:'event',id:'ev_textbox_enter',cap:true, icon:'✅',label:'Когда нажали Enter в поле',
+   fields:[{k:'box',l:'TextBox',v:'MyBox'}],
+   code:d=>`${d.box}.FocusLost:Connect(function(enterPressed)\n\tif enterPressed then\n`},
+
+  // ═══ ИНТЕРФЕЙС — СОЗДАНИЕ ═══
+  {cat:'ui',id:'ui_screengui',icon:'🖥',label:'Создать главный экран (ScreenGui)',
+   fields:[{k:'name',l:'Имя',v:'MyGui'}],
+   code:d=>`local ${d.name} = Instance.new("ScreenGui")\n${d.name}.Name = "${d.name}"\n${d.name}.ResetOnSpawn = false\n${d.name}.Parent = game:GetService("CoreGui")\n`},
+
+  {cat:'ui',id:'ui_frame',icon:'▭',label:'Создать рамку (Frame)',
+   fields:[{k:'name',l:'Имя',v:'Panel'},{k:'parent',l:'Родитель',v:'MyGui'},{k:'x',l:'X%',v:'10'},{k:'y',l:'Y%',v:'10'},{k:'w',l:'Ширина%',v:'30'},{k:'h',l:'Высота%',v:'40'}],
+   code:d=>`local ${d.name} = Instance.new("Frame")\n${d.name}.Size = UDim2.new(${d.w/100},0,${d.h/100},0)\n${d.name}.Position = UDim2.new(${d.x/100},0,${d.y/100},0)\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_button',icon:'🔘',label:'Создать кнопку (Button)',
+   fields:[{k:'name',l:'Имя',v:'MyBtn'},{k:'parent',l:'Родитель',v:'Panel'},{k:'text',l:'Текст',v:'Нажми!'},{k:'x',l:'X px',v:'10'},{k:'y',l:'Y px',v:'10'},{k:'w',l:'Ш px',v:'120'},{k:'h',l:'В px',v:'40'}],
+   code:d=>`local ${d.name} = Instance.new("TextButton")\n${d.name}.Text = "${d.text}"\n${d.name}.Size = UDim2.new(0,${d.w},0,${d.h})\n${d.name}.Position = UDim2.new(0,${d.x},0,${d.y})\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_label',icon:'🏷',label:'Создать надпись (Label)',
+   fields:[{k:'name',l:'Имя',v:'MyLabel'},{k:'parent',l:'Родитель',v:'Panel'},{k:'text',l:'Текст',v:'Привет!'}],
+   code:d=>`local ${d.name} = Instance.new("TextLabel")\n${d.name}.Text = "${d.text}"\n${d.name}.Size = UDim2.new(1,0,0,30)\n${d.name}.BackgroundTransparency = 1\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_textbox',icon:'✏',label:'Создать поле ввода (TextBox)',
+   fields:[{k:'name',l:'Имя',v:'MyBox'},{k:'parent',l:'Родитель',v:'Panel'},{k:'ph',l:'Подсказка',v:'Введи текст...'}],
+   code:d=>`local ${d.name} = Instance.new("TextBox")\n${d.name}.PlaceholderText = "${d.ph}"\n${d.name}.Size = UDim2.new(1,-16,0,35)\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_image',icon:'🖼',label:'Создать картинку (ImageLabel)',
+   fields:[{k:'name',l:'Имя',v:'MyImg'},{k:'parent',l:'Родитель',v:'Panel'},{k:'id',l:'Asset ID',v:'rbxassetid://0'}],
+   code:d=>`local ${d.name} = Instance.new("ImageLabel")\n${d.name}.Image = "${d.id}"\n${d.name}.Size = UDim2.new(0,100,0,100)\n${d.name}.BackgroundTransparency = 1\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_imgbtn',icon:'🖼',label:'Создать кнопку-картинку (ImageButton)',
+   fields:[{k:'name',l:'Имя',v:'ImgBtn'},{k:'parent',l:'Родитель',v:'Panel'},{k:'id',l:'Asset ID',v:'rbxassetid://0'}],
+   code:d=>`local ${d.name} = Instance.new("ImageButton")\n${d.name}.Image = "${d.id}"\n${d.name}.Size = UDim2.new(0,80,0,80)\n${d.name}.BackgroundTransparency = 1\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_scroll',icon:'📜',label:'Создать прокрутку (ScrollFrame)',
+   fields:[{k:'name',l:'Имя',v:'ScrollFrame'},{k:'parent',l:'Родитель',v:'Panel'}],
+   code:d=>`local ${d.name} = Instance.new("ScrollingFrame")\n${d.name}.Size = UDim2.new(1,0,1,0)\n${d.name}.ScrollBarThickness = 6\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_destroy',icon:'🗑',label:'Удалить элемент',
+   fields:[{k:'elem',l:'Элемент',v:'Panel'}],
+   code:d=>`${d.elem}:Destroy()\n`},
+
+  {cat:'ui',id:'ui_clone',icon:'📄',label:'Скопировать элемент',
+   fields:[{k:'src',l:'Источник',v:'template'},{k:'parent',l:'Родитель',v:'MyGui'},{k:'name',l:'Имя копии',v:'copy'}],
+   code:d=>`local ${d.name} = ${d.src}:Clone()\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'ui',id:'ui_setparent',icon:'📁',label:'Переместить в другой объект',
+   fields:[{k:'elem',l:'Элемент',v:'Panel'},{k:'parent',l:'Новый родитель',v:'MyGui'}],
+   code:d=>`${d.elem}.Parent = ${d.parent}\n`},
+
+  // ═══ ВНЕШНИЙ ВИД ═══
+  {cat:'look',id:'look_color',icon:'🎨',label:'Установить цвет фона',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'r',l:'R',v:'255'},{k:'g',l:'G',v:'0'},{k:'b',l:'B',v:'0'}],
+   code:d=>`${d.elem}.BackgroundColor3 = Color3.fromRGB(${d.r},${d.g},${d.b})\n`},
+
+  {cat:'look',id:'look_textcolor',icon:'🖊',label:'Установить цвет текста',
+   fields:[{k:'elem',l:'Объект',v:'MyLabel'},{k:'r',l:'R',v:'255'},{k:'g',l:'G',v:'255'},{k:'b',l:'B',v:'255'}],
+   code:d=>`${d.elem}.TextColor3 = Color3.fromRGB(${d.r},${d.g},${d.b})\n`},
+
+  {cat:'look',id:'look_transp',icon:'👻',label:'Установить прозрачность',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'val',l:'Прозрачность (0-1)',v:'0.5'}],
+   code:d=>`${d.elem}.BackgroundTransparency = ${d.val}\n`},
+
+  {cat:'look',id:'look_texttransp',icon:'💬',label:'Прозрачность текста',
+   fields:[{k:'elem',l:'Объект',v:'MyLabel'},{k:'val',l:'Прозрачность',v:'0'}],
+   code:d=>`${d.elem}.TextTransparency = ${d.val}\n`},
+
+  {cat:'look',id:'look_visible',icon:'👁',label:'Показать элемент',
+   fields:[{k:'elem',l:'Объект',v:'Panel'}],
+   code:d=>`${d.elem}.Visible = true\n`},
+
+  {cat:'look',id:'look_hide',icon:'🙈',label:'Скрыть элемент',
+   fields:[{k:'elem',l:'Объект',v:'Panel'}],
+   code:d=>`${d.elem}.Visible = false\n`},
+
+  {cat:'look',id:'look_toggle_vis',icon:'🔄',label:'Переключить видимость',
+   fields:[{k:'elem',l:'Объект',v:'Panel'}],
+   code:d=>`${d.elem}.Visible = not ${d.elem}.Visible\n`},
+
+  {cat:'look',id:'look_size',icon:'📐',label:'Установить размер',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'w',l:'Ш%',v:'50'},{k:'h',l:'В%',v:'30'}],
+   code:d=>`${d.elem}.Size = UDim2.new(${d.w/100},0,${d.h/100},0)\n`},
+
+  {cat:'look',id:'look_sizepx',icon:'📏',label:'Размер в пикселях',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'w',l:'Ш px',v:'200'},{k:'h',l:'В px',v:'100'}],
+   code:d=>`${d.elem}.Size = UDim2.new(0,${d.w},0,${d.h})\n`},
+
+  {cat:'look',id:'look_pos',icon:'📍',label:'Переместить элемент (%)',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'x',l:'X%',v:'25'},{k:'y',l:'Y%',v:'25'}],
+   code:d=>`${d.elem}.Position = UDim2.new(${d.x/100},0,${d.y/100},0)\n`},
+
+  {cat:'look',id:'look_pospx',icon:'📌',label:'Переместить (px)',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'x',l:'X px',v:'100'},{k:'y',l:'Y px',v:'100'}],
+   code:d=>`${d.elem}.Position = UDim2.new(0,${d.x},0,${d.y})\n`},
+
+  {cat:'look',id:'look_center',icon:'🎯',label:'Центровать элемент',
+   fields:[{k:'elem',l:'Объект',v:'Panel'}],
+   code:d=>`${d.elem}.AnchorPoint = Vector2.new(0.5,0.5)\n${d.elem}.Position = UDim2.new(0.5,0,0.5,0)\n`},
+
+  {cat:'look',id:'look_text',icon:'✏',label:'Изменить текст',
+   fields:[{k:'elem',l:'Объект',v:'MyLabel'},{k:'txt',l:'Текст',v:'Новый текст!'}],
+   code:d=>`${d.elem}.Text = "${d.txt}"\n`},
+
+  {cat:'look',id:'look_textsize',icon:'🔡',label:'Размер шрифта',
+   fields:[{k:'elem',l:'Объект',v:'MyLabel'},{k:'size',l:'Размер',v:'18'}],
+   code:d=>`${d.elem}.TextSize = ${d.size}\n`},
+
+  {cat:'look',id:'look_font',icon:'🔤',label:'Установить шрифт',
+   fields:[{k:'elem',l:'Объект',v:'MyLabel'},{k:'font',l:'Шрифт',v:'GothamBold',t:'select',o:['GothamBold','Gotham','Arial','ArialBold','Code','Cartoon','Fantasy','Highway','Legacy']}],
+   code:d=>`${d.elem}.Font = Enum.Font.${d.font}\n`},
+
+  {cat:'look',id:'look_corner',icon:'⬛',label:'Скруглить углы (UICorner)',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'r',l:'Радиус px',v:'8'}],
+   code:d=>`local _c = Instance.new("UICorner")\n_c.CornerRadius = UDim.new(0,${d.r})\n_c.Parent = ${d.elem}\n`},
+
+  {cat:'look',id:'look_stroke',icon:'🖊',label:'Обводка (UIStroke)',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'thick',l:'Толщина',v:'2'},{k:'r',l:'R',v:'255'},{k:'g',l:'G',v:'255'},{k:'b',l:'B',v:'255'}],
+   code:d=>`local _s = Instance.new("UIStroke")\n_s.Thickness = ${d.thick}\n_s.Color = Color3.fromRGB(${d.r},${d.g},${d.b})\n_s.Parent = ${d.elem}\n`},
+
+  {cat:'look',id:'look_zindex',icon:'📚',label:'Порядок слоёв (ZIndex)',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'z',l:'ZIndex',v:'5'}],
+   code:d=>`${d.elem}.ZIndex = ${d.z}\n`},
+
+  {cat:'look',id:'look_rotation',icon:'🔄',label:'Повернуть элемент',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'deg',l:'Градусы',v:'45'}],
+   code:d=>`${d.elem}.Rotation = ${d.deg}\n`},
+
+  {cat:'look',id:'look_draggable',icon:'✋',label:'Сделать перетаскиваемым',
+   fields:[{k:'elem',l:'Объект',v:'Panel'}],
+   code:d=>`${d.elem}.Draggable = true\n`},
+
+  {cat:'look',id:'look_notdraggable',icon:'🚫',label:'Запретить перетаскивание',
+   fields:[{k:'elem',l:'Объект',v:'Panel'}],
+   code:d=>`${d.elem}.Draggable = false\n`},
+
+  {cat:'look',id:'look_image',icon:'🖼',label:'Изменить картинку',
+   fields:[{k:'elem',l:'Объект',v:'MyImg'},{k:'id',l:'Asset ID',v:'rbxassetid://0'}],
+   code:d=>`${d.elem}.Image = "${d.id}"\n`},
+
+  {cat:'look',id:'look_imgtransp',icon:'🌫',label:'Прозрачность картинки',
+   fields:[{k:'elem',l:'Объект',v:'MyImg'},{k:'val',l:'Прозрачность',v:'0'}],
+   code:d=>`${d.elem}.ImageTransparency = ${d.val}\n`},
+
+  {cat:'look',id:'look_imgcolor',icon:'🎨',label:'Цветить картинку',
+   fields:[{k:'elem',l:'Объект',v:'MyImg'},{k:'r',l:'R',v:'255'},{k:'g',l:'G',v:'100'},{k:'b',l:'B',v:'100'}],
+   code:d=>`${d.elem}.ImageColor3 = Color3.fromRGB(${d.r},${d.g},${d.b})\n`},
+
+  // ═══ УПРАВЛЕНИЕ ═══
+  {cat:'control',id:'ctrl_end',end:true,icon:'🔚',label:'Конец (end)',
+   fields:[],
+   code:()=>`end\n`},
+
+  {cat:'control',id:'ctrl_if',icon:'❓',label:'Если (if)',
+   fields:[{k:'cond',l:'Условие',v:'x > 0'}],
+   code:d=>`if ${d.cond} then\n`},
+
+  {cat:'control',id:'ctrl_elseif',icon:'🤔',label:'Иначе если (elseif)',
+   fields:[{k:'cond',l:'Условие',v:'x == 5'}],
+   code:d=>`elseif ${d.cond} then\n`},
+
+  {cat:'control',id:'ctrl_else',icon:'↩',label:'Иначе (else)',
+   fields:[],
+   code:()=>`else\n`},
+
+  {cat:'control',id:'ctrl_wait',icon:'⏱',label:'Подождать (секунды)',
+   fields:[{k:'sec',l:'Секунды',v:'1'}],
+   code:d=>`task.wait(${d.sec})\n`},
+
+  {cat:'control',id:'ctrl_spawn',icon:'🚀',label:'Запустить одновременно',
+   fields:[{k:'func',l:'Функция',v:'myFunc'}],
+   code:d=>`task.spawn(${d.func})\n`},
+
+  {cat:'control',id:'ctrl_delay',icon:'⌛',label:'Запустить через N секунд',
+   fields:[{k:'sec',l:'Секунды',v:'2'},{k:'func',l:'Функция',v:'myFunc'}],
+   code:d=>`task.delay(${d.sec}, ${d.func})\n`},
+
+  {cat:'control',id:'ctrl_break',icon:'⛔',label:'Остановить цикл (break)',
+   fields:[],
+   code:()=>`break\n`},
+
+  {cat:'control',id:'ctrl_continue',icon:'⏭',label:'Следующая итерация (continue)',
+   fields:[],
+   code:()=>`continue\n`},
+
+  {cat:'control',id:'ctrl_return',icon:'↩',label:'Выйти из функции (return)',
+   fields:[{k:'val',l:'Значение',v:''}],
+   code:d=>`return ${d.val}\n`},
+
+  {cat:'control',id:'ctrl_pcall',icon:'🛡',label:'Попробовать (pcall)',
+   fields:[{k:'func',l:'Функция',v:'riskyFunc'}],
+   code:d=>`local ok, err = pcall(${d.func})\nif not ok then warn("Ошибка: "..tostring(err)) end\n`},
+
+  // ═══ ЦИКЛЫ ═══
+  {cat:'loop',id:'loop_repeat_n',icon:'🔢',label:'Повторить N раз',
+   fields:[{k:'n',l:'Раз',v:'10'}],
+   code:d=>`for _ = 1, ${d.n} do\n`},
+
+  {cat:'loop',id:'loop_for_num',icon:'🔄',label:'Цикл: от до',
+   fields:[{k:'var',l:'Переменная',v:'i'},{k:'from',l:'От',v:'1'},{k:'to',l:'До',v:'10'}],
+   code:d=>`for ${d.var} = ${d.from}, ${d.to} do\n`},
+
+  {cat:'loop',id:'loop_for_step',icon:'🔃',label:'Цикл: от до, шаг',
+   fields:[{k:'var',l:'Переменная',v:'i'},{k:'from',l:'От',v:'1'},{k:'to',l:'До',v:'10'},{k:'step',l:'Шаг',v:'2'}],
+   code:d=>`for ${d.var} = ${d.from}, ${d.to}, ${d.step} do\n`},
+
+  {cat:'loop',id:'loop_while',icon:'🌀',label:'Пока (while)',
+   fields:[{k:'cond',l:'Условие',v:'true'}],
+   code:d=>`while ${d.cond} do\n`},
+
+  {cat:'loop',id:'loop_repeat_until',icon:'🔁',label:'Повторять пока не (repeat)',
+   fields:[{k:'cond',l:'Пока не',v:'x >= 10'}],
+   code:d=>`repeat\ntask.wait()\nuntil ${d.cond}\n`},
+
+  {cat:'loop',id:'loop_for_pairs',icon:'🗃',label:'Для каждого в таблице',
+   fields:[{k:'k',l:'Ключ',v:'k'},{k:'v',l:'Значение',v:'v'},{k:'tbl',l:'Таблица',v:'myTable'}],
+   code:d=>`for ${d.k}, ${d.v} in pairs(${d.tbl}) do\n`},
+
+  {cat:'loop',id:'loop_ipairs',icon:'📋',label:'Для каждого (по порядку)',
+   fields:[{k:'i',l:'Номер',v:'i'},{k:'v',l:'Значение',v:'v'},{k:'tbl',l:'Таблица',v:'myList'}],
+   code:d=>`for ${d.i}, ${d.v} in ipairs(${d.tbl}) do\n`},
+
+  // ═══ ЛОГИКА ═══
+  {cat:'logic',id:'lgc_and',icon:'✅',label:'И (and)',
+   fields:[{k:'a',l:'A',v:'x > 0'},{k:'b',l:'B',v:'y < 10'}],
+   code:d=>`-- ${d.a} and ${d.b}\n`},
+
+  {cat:'logic',id:'lgc_or',icon:'🔀',label:'ИЛИ (or)',
+   fields:[{k:'a',l:'A',v:'x > 0'},{k:'b',l:'B',v:'y < 10'}],
+   code:d=>`-- ${d.a} or ${d.b}\n`},
+
+  {cat:'logic',id:'lgc_not',icon:'🚫',label:'НЕ (not)',
+   fields:[{k:'a',l:'Условие',v:'isActive'}],
+   code:d=>`-- not (${d.a})\n`},
+
+  {cat:'logic',id:'lgc_eq',icon:'⚖',label:'Равно (==)',
+   fields:[{k:'a',l:'A',v:'x'},{k:'b',l:'B',v:'5'}],
+   code:d=>`-- ${d.a} == ${d.b}\n`},
+
+  {cat:'logic',id:'lgc_neq',icon:'≠',label:'Не равно (~=)',
+   fields:[{k:'a',l:'A',v:'x'},{k:'b',l:'B',v:'0'}],
+   code:d=>`-- ${d.a} ~= ${d.b}\n`},
+
+  {cat:'logic',id:'lgc_gt',icon:'▶',label:'Больше (>)',
+   fields:[{k:'a',l:'A',v:'score'},{k:'b',l:'B',v:'100'}],
+   code:d=>`-- ${d.a} > ${d.b}\n`},
+
+  {cat:'logic',id:'lgc_lt',icon:'◀',label:'Меньше (<)',
+   fields:[{k:'a',l:'A',v:'hp'},{k:'b',l:'B',v:'0'}],
+   code:d=>`-- ${d.a} < ${d.b}\n`},
+
+  // ═══ ПЕРЕМЕННЫЕ ═══
+  {cat:'vars',id:'var_local',icon:'📦',label:'Создать переменную',
+   fields:[{k:'name',l:'Имя',v:'myVar'},{k:'val',l:'Значение',v:'0'}],
+   code:d=>`local ${d.name} = ${d.val}\n`},
+
+  {cat:'vars',id:'var_set',icon:'✏',label:'Установить значение',
+   fields:[{k:'name',l:'Переменная',v:'myVar'},{k:'val',l:'Значение',v:'100'}],
+   code:d=>`${d.name} = ${d.val}\n`},
+
+  {cat:'vars',id:'var_add',icon:'➕',label:'Прибавить к переменной',
+   fields:[{k:'name',l:'Переменная',v:'score'},{k:'val',l:'Прибавить',v:'10'}],
+   code:d=>`${d.name} = ${d.name} + ${d.val}\n`},
+
+  {cat:'vars',id:'var_sub',icon:'➖',label:'Вычесть из переменной',
+   fields:[{k:'name',l:'Переменная',v:'hp'},{k:'val',l:'Вычесть',v:'5'}],
+   code:d=>`${d.name} = ${d.name} - ${d.val}\n`},
+
+  {cat:'vars',id:'var_mul',icon:'✖',label:'Умножить переменную',
+   fields:[{k:'name',l:'Переменная',v:'speed'},{k:'val',l:'Умножить на',v:'2'}],
+   code:d=>`${d.name} = ${d.name} * ${d.val}\n`},
+
+  {cat:'vars',id:'var_table',icon:'📋',label:'Создать список (таблицу)',
+   fields:[{k:'name',l:'Имя',v:'myList'}],
+   code:d=>`local ${d.name} = {}\n`},
+
+  {cat:'vars',id:'var_table_add',icon:'➕',label:'Добавить в список',
+   fields:[{k:'tbl',l:'Список',v:'myList'},{k:'val',l:'Значение',v:'"item"'}],
+   code:d=>`table.insert(${d.tbl}, ${d.val})\n`},
+
+  {cat:'vars',id:'var_table_remove',icon:'➖',label:'Удалить из списка',
+   fields:[{k:'tbl',l:'Список',v:'myList'},{k:'i',l:'Позиция',v:'1'}],
+   code:d=>`table.remove(${d.tbl}, ${d.i})\n`},
+
+  {cat:'vars',id:'var_table_len',icon:'🔢',label:'Длина списка',
+   fields:[{k:'name',l:'Переменная',v:'len'},{k:'tbl',l:'Список',v:'myList'}],
+   code:d=>`local ${d.name} = #${d.tbl}\n`},
+
+  {cat:'vars',id:'var_global',icon:'🌐',label:'Глобальная переменная',
+   fields:[{k:'name',l:'Имя',v:'GlobalScore'},{k:'val',l:'Значение',v:'0'}],
+   code:d=>`_G.${d.name} = ${d.val}\n`},
+
+  // ═══ МАТЕМАТИКА ═══
+  {cat:'math',id:'math_print',icon:'🖨',label:'Вывести (print)',
+   fields:[{k:'val',l:'Значение',v:'"Привет!"'}],
+   code:d=>`print(${d.val})\n`},
+
+  {cat:'math',id:'math_warn',icon:'⚠',label:'Предупреждение (warn)',
+   fields:[{k:'val',l:'Сообщение',v:'"Что-то не так"'}],
+   code:d=>`warn(${d.val})\n`},
+
+  {cat:'math',id:'math_rand',icon:'🎲',label:'Случайное число',
+   fields:[{k:'name',l:'Переменная',v:'rnd'},{k:'min',l:'От',v:'1'},{k:'max',l:'До',v:'100'}],
+   code:d=>`local ${d.name} = math.random(${d.min}, ${d.max})\n`},
+
+  {cat:'math',id:'math_abs',icon:'📊',label:'Абсолютное значение',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'val',l:'Значение',v:'x'}],
+   code:d=>`local ${d.name} = math.abs(${d.val})\n`},
+
+  {cat:'math',id:'math_floor',icon:'⬇',label:'Округлить вниз (floor)',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'val',l:'Значение',v:'3.7'}],
+   code:d=>`local ${d.name} = math.floor(${d.val})\n`},
+
+  {cat:'math',id:'math_ceil',icon:'⬆',label:'Округлить вверх (ceil)',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'val',l:'Значение',v:'3.2'}],
+   code:d=>`local ${d.name} = math.ceil(${d.val})\n`},
+
+  {cat:'math',id:'math_min',icon:'🔽',label:'Минимум из двух чисел',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'a',l:'A',v:'x'},{k:'b',l:'B',v:'y'}],
+   code:d=>`local ${d.name} = math.min(${d.a}, ${d.b})\n`},
+
+  {cat:'math',id:'math_max',icon:'🔼',label:'Максимум из двух чисел',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'a',l:'A',v:'x'},{k:'b',l:'B',v:'y'}],
+   code:d=>`local ${d.name} = math.max(${d.a}, ${d.b})\n`},
+
+  {cat:'math',id:'math_sqrt',icon:'√',label:'Квадратный корень',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'val',l:'Значение',v:'16'}],
+   code:d=>`local ${d.name} = math.sqrt(${d.val})\n`},
+
+  {cat:'math',id:'math_clamp',icon:'📎',label:'Зажать между min и max',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'val',l:'Значение',v:'x'},{k:'min',l:'Min',v:'0'},{k:'max',l:'Max',v:'100'}],
+   code:d=>`local ${d.name} = math.clamp(${d.val}, ${d.min}, ${d.max})\n`},
+
+  // ═══ ТЕКСТ ═══
+  {cat:'text',id:'txt_concat',icon:'🔗',label:'Соединить тексты',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'a',l:'Текст 1',v:'"Привет "'}
+    ,{k:'b',l:'Текст 2',v:'name'}],
+   code:d=>`local ${d.name} = ${d.a} .. ${d.b}\n`},
+
+  {cat:'text',id:'txt_len',icon:'📏',label:'Длина текста',
+   fields:[{k:'name',l:'Переменная',v:'len'},{k:'str',l:'Текст',v:'myText'}],
+   code:d=>`local ${d.name} = #${d.str}\n`},
+
+  {cat:'text',id:'txt_upper',icon:'🔠',label:'В верхний регистр (БОЛЬШИЕ)',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'str',l:'Текст',v:'myText'}],
+   code:d=>`local ${d.name} = string.upper(${d.str})\n`},
+
+  {cat:'text',id:'txt_lower',icon:'🔡',label:'В нижний регистр (маленькие)',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'str',l:'Текст',v:'myText'}],
+   code:d=>`local ${d.name} = string.lower(${d.str})\n`},
+
+  {cat:'text',id:'txt_sub',icon:'✂',label:'Вырезать часть текста',
+   fields:[{k:'name',l:'Переменная',v:'result'},{k:'str',l:'Текст',v:'myText'},{k:'from',l:'С позиции',v:'1'},{k:'to',l:'По позицию',v:'5'}],
+   code:d=>`local ${d.name} = string.sub(${d.str}, ${d.from}, ${d.to})\n`},
+
+  {cat:'text',id:'txt_find',icon:'🔍',label:'Найти в тексте',
+   fields:[{k:'name',l:'Переменная',v:'pos'},{k:'str',l:'Текст',v:'myText'},{k:'pat',l:'Что искать',v:'"hello"'}],
+   code:d=>`local ${d.name} = string.find(${d.str}, ${d.pat})\n`},
+
+  {cat:'text',id:'txt_format',icon:'📝',label:'Форматировать текст',
+   fields:[{k:'name',l:'Переменная',v:'msg'},{k:'fmt',l:'Шаблон',v:'"Счёт: %d"'},{k:'val',l:'Значение',v:'score'}],
+   code:d=>`local ${d.name} = string.format(${d.fmt}, ${d.val})\n`},
+
+  {cat:'text',id:'txt_tonumber',icon:'🔢',label:'Текст → число',
+   fields:[{k:'name',l:'Переменная',v:'num'},{k:'str',l:'Текст',v:'"42"'}],
+   code:d=>`local ${d.name} = tonumber(${d.str})\n`},
+
+  {cat:'text',id:'txt_tostring',icon:'🔤',label:'Число → текст',
+   fields:[{k:'name',l:'Переменная',v:'str'},{k:'num',l:'Число',v:'42'}],
+   code:d=>`local ${d.name} = tostring(${d.num})\n`},
+
+  // ═══ ИГРОК ═══
+  {cat:'player',id:'pl_get',icon:'👤',label:'Получить себя (LocalPlayer)',
+   fields:[{k:'name',l:'Переменная',v:'player'}],
+   code:d=>`local ${d.name} = game:GetService("Players").LocalPlayer\n`},
+
+  {cat:'player',id:'pl_char',icon:'🧍',label:'Получить персонажа',
+   fields:[{k:'name',l:'Переменная',v:'char'},{k:'pl',l:'Игрок',v:'player'}],
+   code:d=>`local ${d.name} = ${d.pl}.Character or ${d.pl}.CharacterAdded:Wait()\n`},
+
+  {cat:'player',id:'pl_humanoid',icon:'❤',label:'Получить Humanoid',
+   fields:[{k:'name',l:'Переменная',v:'hum'},{k:'char',l:'Персонаж',v:'char'}],
+   code:d=>`local ${d.name} = ${d.char}:WaitForChild("Humanoid")\n`},
+
+  {cat:'player',id:'pl_hp',icon:'💗',label:'Установить здоровье',
+   fields:[{k:'hum',l:'Humanoid',v:'hum'},{k:'val',l:'Здоровье',v:'100'}],
+   code:d=>`${d.hum}.Health = ${d.val}\n`},
+
+  {cat:'player',id:'pl_maxhp',icon:'💪',label:'Максимальное здоровье',
+   fields:[{k:'hum',l:'Humanoid',v:'hum'},{k:'val',l:'Макс.',v:'200'}],
+   code:d=>`${d.hum}.MaxHealth = ${d.val}\n`},
+
+  {cat:'player',id:'pl_speed',icon:'⚡',label:'Скорость ходьбы',
+   fields:[{k:'hum',l:'Humanoid',v:'hum'},{k:'val',l:'Скорость',v:'16'}],
+   code:d=>`${d.hum}.WalkSpeed = ${d.val}\n`},
+
+  {cat:'player',id:'pl_jump',icon:'🦘',label:'Сила прыжка',
+   fields:[{k:'hum',l:'Humanoid',v:'hum'},{k:'val',l:'Сила',v:'50'}],
+   code:d=>`${d.hum}.JumpPower = ${d.val}\n`},
+
+  {cat:'player',id:'pl_name',icon:'🏷',label:'Имя игрока',
+   fields:[{k:'name',l:'Переменная',v:'playerName'},{k:'pl',l:'Игрок',v:'player'}],
+   code:d=>`local ${d.name} = ${d.pl}.Name\n`},
+
+  {cat:'player',id:'pl_userid',icon:'🆔',label:'ID игрока',
+   fields:[{k:'name',l:'Переменная',v:'userId'},{k:'pl',l:'Игрок',v:'player'}],
+   code:d=>`local ${d.name} = ${d.pl}.UserId\n`},
+
+  {cat:'player',id:'pl_team',icon:'🎽',label:'Команда игрока',
+   fields:[{k:'name',l:'Переменная',v:'team'},{k:'pl',l:'Игрок',v:'player'}],
+   code:d=>`local ${d.name} = ${d.pl}.Team\n`},
+
+  {cat:'player',id:'pl_kick',icon:'🚪',label:'Выгнать игрока',
+   fields:[{k:'pl',l:'Игрок',v:'player'},{k:'msg',l:'Причина',v:'"Нарушение правил"'}],
+   code:d=>`${d.pl}:Kick(${d.msg})\n`},
+
+  // ═══ ROBLOX ═══
+  {cat:'roblox',id:'rb_service',icon:'⚙',label:'Получить сервис',
+   fields:[{k:'name',l:'Переменная',v:'Players'},{k:'svc',l:'Сервис',v:'Players',t:'select',o:['Players','Workspace','ReplicatedStorage','ServerStorage','UserInputService','RunService','TweenService','SoundService','HttpService','CoreGui','StarterGui','Lighting']}],
+   code:d=>`local ${d.name} = game:GetService("${d.svc}")\n`},
+
+  {cat:'roblox',id:'rb_find',icon:'🔍',label:'Найти объект (FindFirstChild)',
+   fields:[{k:'name',l:'Переменная',v:'part'},{k:'parent',l:'Родитель',v:'workspace'},{k:'child',l:'Имя объекта',v:'MyPart'}],
+   code:d=>`local ${d.name} = ${d.parent}:FindFirstChild("${d.child}")\n`},
+
+  {cat:'roblox',id:'rb_wait_child',icon:'⏳',label:'Ждать объект (WaitForChild)',
+   fields:[{k:'name',l:'Переменная',v:'part'},{k:'parent',l:'Родитель',v:'workspace'},{k:'child',l:'Имя',v:'MyPart'}],
+   code:d=>`local ${d.name} = ${d.parent}:WaitForChild("${d.child}")\n`},
+
+  {cat:'roblox',id:'rb_new',icon:'✨',label:'Создать новый объект',
+   fields:[{k:'name',l:'Переменная',v:'part'},{k:'type',l:'Тип',v:'Part',t:'select',o:['Part','Model','Folder','Script','LocalScript','RemoteEvent','BindableEvent','Sound','BillboardGui','SurfaceGui']},{k:'parent',l:'Родитель',v:'workspace'}],
+   code:d=>`local ${d.name} = Instance.new("${d.type}")\n${d.name}.Parent = ${d.parent}\n`},
+
+  {cat:'roblox',id:'rb_remote_fire',icon:'📡',label:'Отправить RemoteEvent (клиент)',
+   fields:[{k:'ev',l:'Событие',v:'myEvent'},{k:'data',l:'Данные',v:'myData'}],
+   code:d=>`game.ReplicatedStorage:WaitForChild("${d.ev}"):FireServer(${d.data})\n`},
+
+  {cat:'roblox',id:'rb_notify',icon:'🔔',label:'Уведомление (Notification)',
+   fields:[{k:'title',l:'Заголовок',v:'Привет!'},{k:'text',l:'Текст',v:'Добро пожаловать!'},{k:'dur',l:'Время (сек)',v:'5'}],
+   code:d=>`game:GetService("StarterGui"):SetCore("SendNotification",{Title="${d.title}",Text="${d.text}",Duration=${d.dur}})\n`},
+
+  {cat:'roblox',id:'rb_chat',icon:'💬',label:'Написать в чат',
+   fields:[{k:'msg',l:'Сообщение',v:'"Системное сообщение"'}],
+   code:d=>`game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage",{Text=${d.msg},Color=Color3.fromRGB(255,200,0)})\n`},
+
+  {cat:'roblox',id:'rb_sound_play',icon:'🔊',label:'Воспроизвести звук',
+   fields:[{k:'sound',l:'Звук',v:'mySound'}],
+   code:d=>`${d.sound}:Play()\n`},
+
+  {cat:'roblox',id:'rb_sound_stop',icon:'🔇',label:'Остановить звук',
+   fields:[{k:'sound',l:'Звук',v:'mySound'}],
+   code:d=>`${d.sound}:Stop()\n`},
+
+  {cat:'roblox',id:'rb_sound_vol',icon:'🔉',label:'Громкость звука',
+   fields:[{k:'sound',l:'Звук',v:'mySound'},{k:'vol',l:'Громкость (0-10)',v:'1'}],
+   code:d=>`${d.sound}.Volume = ${d.vol}\n`},
+
+  {cat:'roblox',id:'rb_lighting',icon:'💡',label:'Яркость освещения',
+   fields:[{k:'val',l:'Яркость',v:'2'}],
+   code:d=>`game:GetService("Lighting").Brightness = ${d.val}\n`},
+
+  {cat:'roblox',id:'rb_timeofday',icon:'🌅',label:'Время суток',
+   fields:[{k:'time',l:'Время (0-24)',v:'14'}],
+   code:d=>`game:GetService("Lighting").TimeOfDay = "${d.time}:00:00"\n`},
+
+  {cat:'roblox',id:'rb_gravity',icon:'🌍',label:'Гравитация',
+   fields:[{k:'val',l:'Гравитация',v:'196.2'}],
+   code:d=>`workspace.Gravity = ${d.val}\n`},
+
+  {cat:'roblox',id:'rb_func',icon:'⚡',label:'Создать функцию',
+   fields:[{k:'name',l:'Имя',v:'myFunction'},{k:'args',l:'Аргументы',v:''}],
+   code:d=>`local function ${d.name}(${d.args})\n`},
+
+  {cat:'roblox',id:'rb_call',icon:'▶',label:'Вызвать функцию',
+   fields:[{k:'name',l:'Функция',v:'myFunction'},{k:'args',l:'Аргументы',v:''}],
+   code:d=>`${d.name}(${d.args})\n`},
+
+  // ═══ АНИМАЦИЯ (TWEEN) ═══
+  {cat:'tween',id:'tw_move',icon:'📍',label:'Плавно переместить',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'x',l:'X%',v:'50'},{k:'y',l:'Y%',v:'50'},{k:'time',l:'Время',v:'0.5'},{k:'style',l:'Стиль',v:'Quad',t:'select',o:['Linear','Sine','Quad','Cubic','Bounce','Elastic','Back']}],
+   code:d=>`game:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time},Enum.EasingStyle.${d.style}),{Position=UDim2.new(${d.x/100},0,${d.y/100},0)}):Play()\n`},
+
+  {cat:'tween',id:'tw_size',icon:'📐',label:'Плавно изменить размер',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'w',l:'Ш%',v:'50'},{k:'h',l:'В%',v:'30'},{k:'time',l:'Время',v:'0.5'}],
+   code:d=>`game:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time}),{Size=UDim2.new(${d.w/100},0,${d.h/100},0)}):Play()\n`},
+
+  {cat:'tween',id:'tw_fade_in',icon:'🌅',label:'Появиться (fade in)',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'time',l:'Время',v:'0.3'}],
+   code:d=>`${d.elem}.BackgroundTransparency = 1\n${d.elem}.Visible = true\ngame:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time}),{BackgroundTransparency=0}):Play()\n`},
+
+  {cat:'tween',id:'tw_fade_out',icon:'🌇',label:'Исчезнуть (fade out)',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'time',l:'Время',v:'0.3'}],
+   code:d=>`local _tw = game:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time}),{BackgroundTransparency=1})\n_tw:Play()\n_tw.Completed:Wait()\n${d.elem}.Visible = false\n`},
+
+  {cat:'tween',id:'tw_color',icon:'🎨',label:'Плавно изменить цвет',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'r',l:'R',v:'255'},{k:'g',l:'G',v:'0'},{k:'b',l:'B',v:'0'},{k:'time',l:'Время',v:'0.5'}],
+   code:d=>`game:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time}),{BackgroundColor3=Color3.fromRGB(${d.r},${d.g},${d.b})}):Play()\n`},
+
+  {cat:'tween',id:'tw_rotate',icon:'🔄',label:'Плавно повернуть',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'deg',l:'Градусы',v:'360'},{k:'time',l:'Время',v:'1'}],
+   code:d=>`game:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time}),{Rotation=${d.deg}}):Play()\n`},
+
+  {cat:'tween',id:'tw_transp',icon:'👻',label:'Плавно изменить прозрачность',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'val',l:'Прозрачность',v:'0.5'},{k:'time',l:'Время',v:'0.5'}],
+   code:d=>`game:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time}),{BackgroundTransparency=${d.val}}):Play()\n`},
+
+  {cat:'tween',id:'tw_bounce',icon:'🏀',label:'Анимация отскока',
+   fields:[{k:'elem',l:'Объект',v:'Panel'},{k:'time',l:'Время',v:'0.6'}],
+   code:d=>`game:GetService("TweenService"):Create(${d.elem},TweenInfo.new(${d.time},Enum.EasingStyle.Bounce,Enum.EasingDirection.Out),{Size=UDim2.new(1.1,0,1.1,0)}):Play()\n`},
+
+  {cat:'tween',id:'tw_shake',icon:'💫',label:'Встряхнуть элемент',
+   fields:[{k:'elem',l:'Объект',v:'Panel'}],
+   code:d=>`local _orig = ${d.elem}.Position\nfor _i = 1, 6 do\n\t${d.elem}.Position = _orig + UDim2.new(0, math.random(-5,5), 0, math.random(-5,5))\n\ttask.wait(0.05)\nend\n${d.elem}.Position = _orig\n`},
+
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let stacks = []; // [{id, x, y, blocks:[{defId,fields}]}]
+let stackIdCounter = 0;
+let blockIdCounter = 0;
+let activeCat = 'event';
+let activeTab = 'code';
+let undoHistory = [];
+let logs = [];
+
+const SNAP_DIST = 30;
+const NOTCH_H = 8;
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  renderCatTabs();
+  renderPalette(activeCat);
+}
+
+function renderCatTabs() {
+  const el = document.getElementById('cat-tabs');
+  el.innerHTML = '';
+  CATS.forEach(cat => {
+    const b = document.createElement('button');
+    b.className = 'cat-btn' + (cat.id === activeCat ? ' active' : '');
+    b.textContent = cat.label;
+    const def = DEFS.find(d=>d.cat===cat.id);
+    // find category class
+    const d0 = DEFS.find(d=>d.cat===cat.id);
+    const allCls = ['c-ui','c-look','c-sound','c-event','c-control','c-vars','c-math','c-text','c-roblox','c-player','c-loop','c-logic','c-tween','c-gui'];
+    const match = allCls.find(c=>c==='c-'+cat.id)||'c-roblox';
+    b.style.background = '';
+    b.classList.add(match);
+    b.onclick = () => { activeCat = cat.id; renderCatTabs(); renderPalette(cat.id); };
+    el.appendChild(b);
+  });
+}
+
+function renderPalette(catId, filter='') {
+  const el = document.getElementById('block-palette');
+  el.innerHTML = '';
+  const items = DEFS.filter(d => {
+    const catMatch = filter ? true : d.cat === catId;
+    const textMatch = filter ? (d.label.toLowerCase().includes(filter.toLowerCase())) : true;
+    return catMatch && textMatch;
+  });
+  const catObj = CATS.find(c=>c.id===catId);
+  items.forEach(def => {
+    const pb = document.createElement('div');
+    pb.className = 'pb c-' + def.cat;
+    pb.innerHTML = `<span class="pb-icon">${def.icon}</span><div class="pb-label">${def.label}</div>`;
+    pb.title = 'Нажми или перетащи';
+    pb.onclick = () => { addStackToWorkspace(def); closeMobile(); };
+    makePaletteDrag(pb, def);
+    el.appendChild(pb);
+  });
+  if (!items.length) {
+    el.innerHTML = '<div style="color:#556;text-align:center;padding:20px;font-size:12px">Ничего не найдено 😔</div>';
+  }
+}
+
+function filterBlocks(q) {
+  renderPalette(activeCat, q);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STACK MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+function addStackToWorkspace(def, x, y) {
+  saveUndo();
+  const ws = document.getElementById('workspace');
+  const id = ++stackIdCounter;
+  const bx = x !== undefined ? x : 80 + (id % 6) * 20;
+  const by = y !== undefined ? y : 80 + (id % 9) * 20;
+
+  const stack = {
+    id, x:bx, y:by,
+    blocks: [createBlockData(def)]
+  };
+  stacks.push(stack);
+  renderStack(stack);
+  updateHint();
+  updateCounter();
+  addLog(`+ ${def.label}`);
+  showToast(`🧱 ${def.label}`);
+}
+
+function createBlockData(def) {
+  const fields = {};
+  (def.fields||[]).forEach(f => { fields[f.k] = f.v; });
+  return { bid: ++blockIdCounter, defId: def.id, fields };
+}
+
+function renderStack(stack) {
+  let el = document.getElementById('stack_'+stack.id);
+  if (el) el.remove();
+
+  el = document.createElement('div');
+  el.className = 'block-stack';
+  el.id = 'stack_' + stack.id;
+  el.style.left = stack.x + 'px';
+  el.style.top = stack.y + 'px';
+
+  stack.blocks.forEach((bdata, idx) => {
+    const def = DEFS.find(d=>d.id===bdata.defId);
+    if (!def) return;
+    const blk = buildBlockEl(bdata, def, idx, stack.blocks.length, stack.id);
+    el.appendChild(blk);
+  });
+
+  if (stack.blocks.length > 1) {
+    const badge = document.createElement('div');
+    badge.className = 'stack-badge';
+    badge.textContent = stack.blocks.length + ' блоков';
+    el.appendChild(badge);
+  }
+
+  document.getElementById('ws-canvas').appendChild(el);
+  makeStackDraggable(el, stack);
+}
+
+function buildBlockEl(bdata, def, idx, total, stackId) {
+  const isFirst = idx === 0;
+  const isLast = idx === total - 1;
+  const isOnly = total === 1;
+
+  const blk = document.createElement('div');
+  blk.className = 'blk c-' + def.cat;
+  if (def.cap) blk.classList.add('cap-block');
+  if (def.end) blk.classList.add('end-block');
+  if (!def.cap && !isFirst) blk.classList.add('has-top-notch');
+  if (!def.end && !isLast) blk.classList.add('has-bottom-slot');
+
+  // Body
+  const body = document.createElement('div');
+  body.className = 'blk-body c-' + def.cat;
+
+  // Icon + label
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'blk-text';
+  iconSpan.textContent = def.icon + ' ';
+  body.appendChild(iconSpan);
+
+  // Build inline with fields
+  // Split label by field names for inline injection
+  let label = def.label;
+  const labelSpan = document.createElement('span');
+  labelSpan.className = 'blk-text';
+  labelSpan.textContent = label;
+  body.appendChild(labelSpan);
+
+  // Fields row
+  if (def.fields && def.fields.length > 0) {
+    const frow = document.createElement('div');
+    frow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:4px;width:100%';
+    def.fields.forEach(f => {
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'color:rgba(255,255,255,.7);font-size:10px;white-space:nowrap';
+      lbl.textContent = f.l + ':';
+      frow.appendChild(lbl);
+
+      if (f.t === 'select') {
+        const sel = document.createElement('select');
+        sel.className = 'blk-select';
+        (f.o||[]).forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt; o.textContent = opt;
+          if (opt === bdata.fields[f.k]) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.onchange = (e) => { bdata.fields[f.k] = e.target.value; };
+        frow.appendChild(sel);
+      } else {
+        const inp = document.createElement('input');
+        inp.className = 'blk-input';
+        inp.value = bdata.fields[f.k] || f.v;
+        inp.style.width = Math.max(60, (bdata.fields[f.k]||f.v).length * 8 + 16) + 'px';
+        inp.oninput = (e) => {
+          bdata.fields[f.k] = e.target.value;
+          e.target.style.width = Math.max(60, e.target.value.length * 8 + 16) + 'px';
+        };
+        inp.onmousedown = e => e.stopPropagation();
+        inp.ontouchstart = e => e.stopPropagation();
+        frow.appendChild(inp);
+      }
+    });
+    body.appendChild(frow);
+  }
+
+  // Delete button
+  const del = document.createElement('button');
+  del.className = 'blk-del';
+  del.textContent = '✕';
+  del.onclick = (e) => { e.stopPropagation(); removeBlockFromStack(stackId, bdata.bid); };
+  del.onmousedown = e => e.stopPropagation();
+  body.appendChild(del);
+
+  blk.appendChild(body);
+  return blk;
+}
+
+function removeBlockFromStack(stackId, bid) {
+  saveUndo();
+  const stack = stacks.find(s=>s.id===stackId);
+  if (!stack) return;
+  stack.blocks = stack.blocks.filter(b=>b.bid!==bid);
+  if (stack.blocks.length === 0) {
+    stacks = stacks.filter(s=>s.id!==stackId);
+    const el = document.getElementById('stack_'+stackId);
+    if (el) el.remove();
+  } else {
+    renderStack(stack);
+  }
+  updateHint(); updateCounter();
+  addLog('Блок удалён');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAG — PALETTE → WORKSPACE
+// ═══════════════════════════════════════════════════════════
+function makePaletteDrag(el, def) {
+  let dragging = false, ghost = null;
+
+  const start = (cx, cy) => {
+    dragging = true;
+    ghost = document.createElement('div');
+    ghost.className = 'pb c-'+def.cat;
+    ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;width:200px;opacity:.8;transform:rotate(4deg);font-size:12px;padding:10px 14px;border-radius:10px;color:#fff;font-family:Nunito,sans-serif;font-weight:800`;
+    ghost.innerHTML = `${def.icon} ${def.label}`;
+    // apply background from class
+    ghost.classList.add('c-'+def.cat);
+    document.body.appendChild(ghost);
+    move(cx, cy);
+  };
+
+  const move = (cx, cy) => {
+    if (ghost) { ghost.style.left=(cx-100)+'px'; ghost.style.top=(cy-20)+'px'; }
+  };
+
+  const end = (cx, cy) => {
+    if (ghost) { ghost.remove(); ghost=null; }
+    if (!dragging) return;
+    dragging = false;
+    const ws = document.getElementById('workspace');
+    const r = ws.getBoundingClientRect();
+    if (cx>=r.left && cx<=r.right && cy>=r.top && cy<=r.bottom) {
+      const x = cx - r.left + ws.scrollLeft - 110;
+      const y = cy - r.top + ws.scrollTop - 20;
+      // Check snap to existing stack
+      const snapResult = findSnapTarget(x + 110, y + 20, null);
+      if (snapResult) {
+        saveUndo();
+        snapResult.stack.blocks.splice(snapResult.idx, 0, createBlockData(def));
+        renderStack(snapResult.stack);
+        updateCounter();
+        addLog(`+ ${def.label} → стек`);
+        showToast(`🔗 Прикреплено!`);
+      } else {
+        addStackToWorkspace(def, Math.max(0,x), Math.max(0,y));
+      }
+    }
+  };
+
+  el.addEventListener('mousedown', e => { e.preventDefault(); start(e.clientX, e.clientY); });
+  document.addEventListener('mousemove', e => { if(dragging) move(e.clientX, e.clientY); });
+  document.addEventListener('mouseup', e => { if(dragging) end(e.clientX, e.clientY); });
+  el.addEventListener('touchstart', e => { const t=e.touches[0]; start(t.clientX, t.clientY); }, {passive:true});
+  document.addEventListener('touchmove', e => { if(dragging){ const t=e.touches[0]; move(t.clientX, t.clientY); e.preventDefault(); } }, {passive:false});
+  document.addEventListener('touchend', e => { if(dragging){ const t=e.changedTouches[0]; end(t.clientX, t.clientY); } });
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAG — STACK IN WORKSPACE
+// ═══════════════════════════════════════════════════════════
+function makeStackDraggable(el, stack) {
+  let dragging = false;
+  let startMx, startMy, startSx, startSy;
+  let snapPreview = null;
+
+  const getXY = (e) => {
+    const t = e.touches ? e.touches[0] : e;
+    return [t.clientX, t.clientY];
+  };
+
+  const onStart = (e) => {
+    // Don't drag if clicking input/select/button
+    if (e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='BUTTON') return;
+    e.preventDefault();
+    dragging = true;
+    const [cx, cy] = getXY(e);
+    startMx = cx; startMy = cy;
+    startSx = stack.x; startSy = stack.y;
+    el.classList.add('dragging-stack');
+    el.style.zIndex = 1000;
+  };
+
+  const onMove = (e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    const [cx, cy] = getXY(e);
+    const ws = document.getElementById('workspace');
+    const dx = cx - startMx, dy = cy - startMy;
+    stack.x = Math.max(0, startSx + dx);
+    stack.y = Math.max(0, startSy + dy);
+    el.style.left = stack.x + 'px';
+    el.style.top = stack.y + 'px';
+
+    // Snap preview
+    clearSnapHighlights();
+    const snap = findSnapTarget(stack.x, stack.y, stack.id);
+    if (snap) {
+      el.classList.add('snap-preview');
+    } else {
+      el.classList.remove('snap-preview');
+    }
+  };
+
+  const onEnd = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    el.classList.remove('dragging-stack','snap-preview');
+    el.style.zIndex = 10;
+    clearSnapHighlights();
+
+    // Snap!
+    const snap = findSnapTarget(stack.x, stack.y, stack.id);
+    if (snap) {
+      saveUndo();
+      // Merge current stack INTO target
+      const targetStack = snap.stack;
+      const myBlocks = [...stack.blocks];
+      if (snap.position === 'bottom') {
+        targetStack.blocks.push(...myBlocks);
+      } else {
+        targetStack.blocks.unshift(...myBlocks);
+      }
+      // Remove current stack
+      stacks = stacks.filter(s=>s.id!==stack.id);
+      el.remove();
+      renderStack(targetStack);
+      updateCounter();
+      showToast('🔗 Блоки соединены!');
+      addLog('Стеки объединены');
+    }
+  };
+
+  el.addEventListener('mousedown', onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  el.addEventListener('touchstart', onStart, {passive:false});
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('touchend', onEnd);
+}
+
+function findSnapTarget(x, y, excludeId) {
+  const ws = document.getElementById('workspace');
+  for (const s of stacks) {
+    if (s.id === excludeId) continue;
+    const el = document.getElementById('stack_'+s.id);
+    if (!el) continue;
+    const h = el.offsetHeight;
+    const w = el.offsetWidth;
+    // Snap below target
+    if (Math.abs(x - s.x) < SNAP_DIST + 40 && Math.abs(y - (s.y + h)) < SNAP_DIST) {
+      return { stack: s, position: 'bottom', idx: s.blocks.length };
+    }
+    // Snap above target
+    if (Math.abs(x - s.x) < SNAP_DIST + 40 && Math.abs(y - s.y) < SNAP_DIST) {
+      return { stack: s, position: 'top', idx: 0 };
+    }
+  }
+  return null;
+}
+
+function clearSnapHighlights() {
+  document.querySelectorAll('.snap-preview,.snap-target').forEach(el => {
+    el.classList.remove('snap-preview','snap-target');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CODE GENERATION
+// ═══════════════════════════════════════════════════════════
+function generateCode() {
+  const lines = ['-- 🧱 Generated by Roblox Block Builder', '-- ' + new Date().toLocaleString('ru'), ''];
+  stacks.forEach(stack => {
+    stack.blocks.forEach(b => {
+      const def = DEFS.find(d=>d.id===b.defId);
+      if (def) lines.push(def.code(b.fields));
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function highlightLua(code) {
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(--[^\n]*)/g,'<span class="cm">$1</span>')
+    .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,'<span class="str">$1</span>')
+    .replace(/\b(local|function|end|if|then|else|elseif|for|while|do|repeat|until|return|not|and|or|in|true|false|nil|break|continue)\b/g,'<span class="kw">$1</span>')
+    .replace(/\b(\d+\.?\d*)\b/g,'<span class="num">$1</span>')
+    .replace(/\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=\()/g,'<span class="fn">$1</span>');
+}
+
+function generateAndShow() {
+  const code = generateCode();
+  document.getElementById('code-out').innerHTML = highlightLua(code);
+  switchTabById('code');
+  showToast('✅ Код сгенерирован!');
+  addLog('Код сгенерирован, ' + stacks.length + ' стеков');
+}
+
+function copyCode() {
+  const code = generateCode();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(()=>showToast('✅ Скопировано!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value=code; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+    showToast('✅ Скопировано!');
+  }
+}
+
+function clearAll() {
+  if (stacks.length === 0) { showToast('⚠ Уже пусто!'); return; }
+  saveUndo();
+  document.querySelectorAll('.block-stack').forEach(e=>e.remove());
+  stacks = [];
+  updateHint(); updateCounter();
+  document.getElementById('code-out').innerHTML = '<span class="cm">-- Добавь блоки и нажми ▶ Генерить</span>';
+  showToast('🗑 Очищено!');
+  addLog('Workspace очищен');
+}
+
+// ═══════════════════════════════════════════════════════════
+// UNDO
+// ═══════════════════════════════════════════════════════════
+function saveUndo() {
+  undoHistory.push(JSON.stringify({stacks, stackIdCounter, blockIdCounter}));
+  if (undoHistory.length > 30) undoHistory.shift();
+}
+
+function undo() {
+  if (!undoHistory.length) { showToast('⚠ Нечего отменять'); return; }
+  const state = JSON.parse(undoHistory.pop());
+  stacks = state.stacks;
+  stackIdCounter = state.stackIdCounter;
+  blockIdCounter = state.blockIdCounter;
+  document.querySelectorAll('.block-stack').forEach(e=>e.remove());
+  stacks.forEach(s=>renderStack(s));
+  updateHint(); updateCounter();
+  showToast('↩ Отменено');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TABS / LOG
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab, btn) {
+  activeTab = tab;
+  document.querySelectorAll('.out-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  else document.querySelectorAll('.out-tab').forEach((b,i)=>{
+    if((i===0&&tab==='code')||(i===1&&tab==='log')||(i===2&&tab==='help')) b.classList.add('active');
+  });
+  switchTabById(tab);
+}
+
+function switchTabById(tab) {
+  activeTab = tab;
+  const el = document.getElementById('code-out');
+  if (tab === 'log') {
+    el.style.whiteSpace='normal';
+    el.innerHTML = logs.slice(-60).map(l=>`<div style="color:#4a5568;font-size:11px;font-family:monospace">${l}</div>`).join('');
+    el.scrollTop=el.scrollHeight;
+  } else if (tab === 'help') {
+    el.style.whiteSpace='normal';
+    el.innerHTML = `<div style="font-size:12px;color:#8892b0;line-height:1.8">
+      <b style="color:#fff;font-size:14px">🧱 Как пользоваться:</b><br>
+      1️⃣ <b style="color:#e94560">Выбери категорию</b> в левом меню<br>
+      2️⃣ <b style="color:#f5a623">Нажми или перетащи</b> блок в рабочую область<br>
+      3️⃣ <b style="color:#27ae60">Заполни поля</b> в блоке (имена, значения)<br>
+      4️⃣ <b style="color:#3498db">Соедини блоки</b> — перетащи один близко к другому!<br>
+      5️⃣ <b style="color:#9b59b6">Нажми ▶ Генерить</b> — получи Lua-код!<br>
+      6️⃣ <b style="color:#1abc9c">Копируй</b> в Roblox Studio и запускай!<br><br>
+      <b style="color:#fff">💡 Подсказки:</b><br>
+      🔗 Блоки <b>прилипают</b> если перетащить близко к другому стеку<br>
+      ✕ Нажми <b>✕</b> на блоке чтобы удалить его<br>
+      ↩ Кнопка <b>Отмена</b> отменяет последнее действие<br>
+      ⚡ Начни с блока <b>"Когда нажата кнопка"</b> из раздела События!
+    </div>`;
+  } else {
+    el.style.whiteSpace='pre';
+  }
+}
+
+function addLog(msg) {
+  const t = new Date().toLocaleTimeString('ru');
+  logs.push(`[${t}] ${msg}`);
+  if (activeTab==='log') switchTabById('log');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function updateHint() {
+  const hint = document.getElementById('ws-hint');
+  hint.style.opacity = stacks.length === 0 ? '1' : '0';
+}
+
+function updateCounter() {
+  const total = stacks.reduce((s,st)=>s+st.blocks.length,0);
+  document.getElementById('blk-counter').textContent = total + ' блоков';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+
+function closeMobile() {
+  if (window.innerWidth<=680) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('show');
+  }
+}
+
+// Prevent workspace scroll while dragging on mobile
+document.getElementById('workspace').addEventListener('touchmove', e=>{
+  // allow scroll when not dragging
+}, {passive:true});
+
+init();
+addLog('Block Builder v3.0 запущен 🚀');
+</script>
+</body>
+</html>
